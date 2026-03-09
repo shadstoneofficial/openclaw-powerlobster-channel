@@ -156,28 +156,30 @@ class PowerLobsterChannel implements ChannelPlugin<PowerLobsterAccount> {
     },
   };
 
-  private async handleEvent(ctx: ChannelGatewayContext<PowerLobsterAccount>, event: PowerLobsterEvent) {
+  private async handleEvent(ctx: ChannelGatewayContext<PowerLobsterAccount>, event: any) {
     const { account, channelRuntime } = ctx;
     const accountId = account.id;
 
+    // Normalize event structure (Relay vs expected)
+    const eventType = event.type || event.event;
+    const eventPayload = event.payload || event.data;
+
+    console.log(`[PowerLobster] Processing normalized event: ${eventType}`, eventPayload);
+
     let peerId = '';
     let content = '';
-    let eventType = 'unknown';
+    let type = 'unknown';
 
-    if (event.type === 'dm.received') {
-      const dmEvent = event as PowerLobsterDMEvent;
-      peerId = dmEvent.payload.from;
-      content = dmEvent.payload.content;
-      eventType = 'dm';
-    } else if (event.type === 'wave.started') {
-        // Handle wave started
-        const waveEvent = event as PowerLobsterWaveEvent;
-        content = `Wave started: ${waveEvent.payload.title}`;
-        peerId = 'wave-system'; // or a specific system user
-        eventType = 'wave';
+    if (eventType === 'dm.received') {
+      peerId = eventPayload.sender_handle || eventPayload.from; // Check both sender_handle and from
+      content = eventPayload.content;
+      type = 'dm';
+    } else if (eventType === 'wave.started') {
+        content = `Wave started: ${eventPayload.title}`;
+        peerId = 'wave-system'; 
+        type = 'wave';
     } else {
-        // Handle other events or ignore
-        console.log(`[PowerLobster] Unhandled event type: ${event.type}`);
+        console.log(`[PowerLobster] Unhandled event type: ${eventType}`);
         return;
     }
 
@@ -188,7 +190,7 @@ class PowerLobsterChannel implements ChannelPlugin<PowerLobsterAccount> {
         accountId: accountId,
         peer: {
           id: peerId,
-          type: eventType, // 'user' or 'group' or custom type
+          type: type, 
         },
         content: content,
       });
@@ -197,7 +199,8 @@ class PowerLobsterChannel implements ChannelPlugin<PowerLobsterAccount> {
         // Dispatch to agent
         await channelRuntime.dispatch(route.agentId, {
             ...event,
-            // Add standard channel event properties if needed
+            type: eventType, // Ensure normalized type is passed
+            payload: eventPayload, // Ensure normalized payload is passed
             channelId: this.id,
             accountId: accountId,
             senderId: peerId,
