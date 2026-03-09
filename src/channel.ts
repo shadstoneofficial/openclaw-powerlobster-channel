@@ -185,19 +185,34 @@ class PowerLobsterChannel implements ChannelPlugin<PowerLobsterAccount> {
 
     // Resolve route
     try {
-      const route = await channelRuntime.routing.resolveAgentRoute({
-        channel: this.id,
-        accountId: accountId,
-        peer: {
-          id: peerId,
-          type: type, 
-        },
-        content: content,
-      });
+      // Create a simplified route directly if resolveAgentRoute fails
+      // This is a common pattern in simple channels
+      let agentId = 'main'; // Default fallback
+      
+      try {
+        const route = await channelRuntime.routing.resolveAgentRoute({
+          channel: this.id,
+          accountId: accountId,
+          peer: {
+            id: peerId,
+            type: type, 
+          },
+          content: content,
+        });
+        if (route && route.agentId) {
+          agentId = route.agentId;
+        }
+      } catch (routingErr) {
+        console.warn(`[PowerLobster] Routing resolution failed, falling back to configured agentId:`, routingErr);
+        // Fallback to the agentId configured in the account
+        if (account.config.agentId) {
+          agentId = account.config.agentId;
+        }
+      }
 
-      if (route && route.agentId) {
+      if (agentId) {
         // Dispatch to agent
-        await channelRuntime.dispatch(route.agentId, {
+        await channelRuntime.dispatch(agentId, {
             ...event,
             type: eventType, // Ensure normalized type is passed
             payload: eventPayload, // Ensure normalized payload is passed
@@ -207,10 +222,10 @@ class PowerLobsterChannel implements ChannelPlugin<PowerLobsterAccount> {
             content: content
         });
       } else {
-          console.warn(`[PowerLobster] No route resolved for event from ${peerId}`);
+          console.warn(`[PowerLobster] No agent resolved for event from ${peerId}`);
       }
     } catch (err) {
-      console.error(`[PowerLobster] Error routing event:`, err);
+      console.error(`[PowerLobster] Error dispatching event:`, err);
     }
   }
 }

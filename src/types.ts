@@ -42,6 +42,7 @@ export interface ResolveAgentRouteInput {
   guildId?: string;
   teamId?: string;
   content?: string;
+  session?: any; // Added optional session
 }
 
 export interface ResolvedAgentRoute {
