@@ -15,7 +15,7 @@ import {
   ChannelId,
 } from './types';
 import { PowerLobsterClient } from './client';
-import { PowerLobsterSocket } from './socket';
+import { PowerLobsterPoller } from './poller';
 
 const CHANNEL_ID: ChannelId = 'powerlobster';
 
@@ -32,7 +32,7 @@ class PowerLobsterChannel implements ChannelPlugin<PowerLobsterAccount> {
   };
 
   private clients = new Map<string, PowerLobsterClient>();
-  private sockets = new Map<string, PowerLobsterSocket>();
+  private pollers = new Map<string, PowerLobsterPoller>();
 
   config: ChannelConfigAdapter<PowerLobsterAccount> = {
     resolveAccount: async (config: any) => {
@@ -67,27 +67,23 @@ class PowerLobsterChannel implements ChannelPlugin<PowerLobsterAccount> {
       const client = new PowerLobsterClient(config);
       this.clients.set(accountId, client);
 
-      const socket = new PowerLobsterSocket(config);
-      this.sockets.set(accountId, socket);
+      const poller = new PowerLobsterPoller(config);
+      this.pollers.set(accountId, poller);
 
-      socket.on('connected', () => {
-        console.log(`[PowerLobster] Account ${accountId} connected`);
-      });
-
-      socket.on('message', async (event: PowerLobsterEvent) => {
+      poller.on('message', async (event: PowerLobsterEvent) => {
         console.log(`[PowerLobster] Received event: ${event.type}`, event);
         await this.handleEvent(ctx, event);
       });
 
-      socket.connect();
+      poller.start();
     },
 
     stopAccount: async (ctx: ChannelGatewayContext<PowerLobsterAccount>) => {
       const accountId = ctx.account.id;
-      const socket = this.sockets.get(accountId);
-      if (socket) {
-        socket.disconnect();
-        this.sockets.delete(accountId);
+      const poller = this.pollers.get(accountId);
+      if (poller) {
+        poller.stop();
+        this.pollers.delete(accountId);
       }
       this.clients.delete(accountId);
     },

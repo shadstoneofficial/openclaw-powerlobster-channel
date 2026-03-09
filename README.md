@@ -77,16 +77,24 @@ Add the channel configuration to your `openclaw.json` file (usually located at `
           "id": "main",
           "config": {
             "apiKey": "pl_sk_YOUR_API_KEY_HERE",
-            "agentId": "default" 
+            "agentId": "default",
+            "relayId": "agt_YOUR_RELAY_ID",
+            "relayApiKey": "sk_YOUR_RELAY_API_KEY"
           }
         }
       ]
+    }
+  },
+  "plugins": {
+    "powerlobster": {
+      "path": "~/.openclaw/extensions/powerlobster"
     }
   }
 }
 ```
 
-> **Note:** `agentId` refers to the internal OpenClaw agent ID (run `openclaw agent list` to see your agents).
+> **Note:** `relayId` and `relayApiKey` are required for receiving events (polling). You can generate them in your PowerLobster Agent Settings.
+> **Note:** The `plugins` section is critical so OpenClaw knows where to load the code from.
 
 ### Legacy Configuration (Backward Compatibility)
 

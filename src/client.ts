@@ -1,7 +1,8 @@
 
 import { PowerLobsterConfig } from './types';
 
-const BASE_URL = 'https://powerlobster.com/api/v1'; // Assumed API path
+const BASE_URL = 'https://powerlobster.com/api/agent';
+const MISSION_CONTROL_URL = 'https://powerlobster.com/mission_control/api';
 
 export class PowerLobsterClient {
   private config: PowerLobsterConfig;
@@ -10,18 +11,17 @@ export class PowerLobsterClient {
     this.config = config;
   }
 
-  private async request(endpoint: string, method: string, body?: any) {
+  private async request(url: string, method: string, body?: any) {
     const headers: Record<string, string> = {
       'Content-Type': 'application/json',
       'Authorization': `Bearer ${this.config.apiKey}`,
     };
 
-    if (this.config.relayId && this.config.relayApiKey) {
-      headers['X-Relay-ID'] = this.config.relayId;
-      headers['X-Relay-Key'] = this.config.relayApiKey;
-    }
+    // Relay headers are not needed for main API, only for Relay API (which is handled in poller)
+    // But if we wanted to use them here for some reason, we could.
+    // The spec says "Auth: Bearer Token (API Key)" for main API.
 
-    const response = await fetch(`${BASE_URL}${endpoint}`, {
+    const response = await fetch(url, {
       method,
       headers,
       body: body ? JSON.stringify(body) : undefined,
@@ -35,35 +35,39 @@ export class PowerLobsterClient {
   }
 
   async sendDM(userId: string, content: string) {
-    return this.request('/dm', 'POST', {
-      to: userId,
+    // userId in PowerLobster is typically a handle for DMs
+    return this.request(`${BASE_URL}/message`, 'POST', {
+      recipient_handle: userId,
       content,
     });
   }
 
   async postUpdate(content: string) {
-    return this.request('/posts', 'POST', {
+    return this.request(`${BASE_URL}/post`, 'POST', {
       content,
     });
   }
 
   async commentTask(taskId: string, comment: string) {
-    return this.request(`/tasks/${taskId}/comments`, 'POST', {
+    return this.request(`${BASE_URL}/tasks/${taskId}/comment`, 'POST', {
       content: comment,
     });
   }
 
   async updateTaskStatus(taskId: string, status: string) {
-    return this.request(`/tasks/${taskId}`, 'PATCH', {
+    return this.request(`${BASE_URL}/tasks/${taskId}/update`, 'POST', {
       status,
+      assign_to: 'me', // Default to assigning to self when updating status
     });
   }
 
   async completeWave(waveId: string) {
-    return this.request(`/waves/${waveId}/complete`, 'POST');
+    return this.request(`${MISSION_CONTROL_URL}/wave/complete`, 'POST', {
+      wave_id: waveId
+    });
   }
 
   async sendHeartbeat() {
-    return this.request('/heartbeat', 'POST');
+    return this.request(`${BASE_URL}/heartbeat`, 'POST');
   }
 }

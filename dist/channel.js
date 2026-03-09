@@ -2,7 +2,7 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.powerLobsterChannel = void 0;
 const client_1 = require("./client");
-const socket_1 = require("./socket");
+const poller_1 = require("./poller");
 const CHANNEL_ID = 'powerlobster';
 class PowerLobsterChannel {
     constructor() {
@@ -17,7 +17,7 @@ class PowerLobsterChannel {
             text: true,
         };
         this.clients = new Map();
-        this.sockets = new Map();
+        this.pollers = new Map();
         this.config = {
             resolveAccount: async (config) => {
                 // Legacy support: Check environment variables if config is empty/missing key
@@ -45,23 +45,20 @@ class PowerLobsterChannel {
                 console.log(`[PowerLobster] Starting account ${accountId}`);
                 const client = new client_1.PowerLobsterClient(config);
                 this.clients.set(accountId, client);
-                const socket = new socket_1.PowerLobsterSocket(config);
-                this.sockets.set(accountId, socket);
-                socket.on('connected', () => {
-                    console.log(`[PowerLobster] Account ${accountId} connected`);
-                });
-                socket.on('message', async (event) => {
+                const poller = new poller_1.PowerLobsterPoller(config);
+                this.pollers.set(accountId, poller);
+                poller.on('message', async (event) => {
                     console.log(`[PowerLobster] Received event: ${event.type}`, event);
                     await this.handleEvent(ctx, event);
                 });
-                socket.connect();
+                poller.start();
             },
             stopAccount: async (ctx) => {
                 const accountId = ctx.account.id;
-                const socket = this.sockets.get(accountId);
-                if (socket) {
-                    socket.disconnect();
-                    this.sockets.delete(accountId);
+                const poller = this.pollers.get(accountId);
+                if (poller) {
+                    poller.stop();
+                    this.pollers.delete(accountId);
                 }
                 this.clients.delete(accountId);
             },
