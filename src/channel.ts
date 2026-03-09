@@ -41,24 +41,59 @@ class PowerLobsterChannel implements ChannelPlugin<PowerLobsterAccount> {
   private pollers = new Map<string, PowerLobsterPoller>();
 
   config: ChannelConfigAdapter<PowerLobsterAccount> = {
-    resolveAccount: async (config: any) => {
-      // Legacy support: Check environment variables if config is empty/missing key
-      const apiKey = config.apiKey || process.env.POWERLOBSTER_API_KEY;
-      const agentId = config.agentId || process.env.OPENCLAW_AGENT_ID || 'main';
+    listAccountIds: async (config: any) => {
+      // Check for accounts in channels.powerlobster.instances
+      const instances = config.channels?.powerlobster?.instances ?? [];
+      if (Array.isArray(instances) && instances.length > 0) {
+        return instances.map((inst: any) => inst.id);
+      }
       
-      if (!apiKey) {
-        throw new Error('PowerLobster API Key is required (config.apiKey or POWERLOBSTER_API_KEY env var)');
+      // Fallback: Check for legacy single account or if we should just return 'default'
+      // If we have legacy env vars, we return 'default'
+      if (process.env.POWERLOBSTER_API_KEY) {
+        return ['default'];
+      }
+      
+      return [];
+    },
+
+    resolveAccount: async (config: any, accountId: string = 'default') => {
+      // 1. Try to find in instances list
+      const instances = config.channels?.powerlobster?.instances ?? [];
+      const instanceConfig = instances.find((inst: any) => inst.id === accountId);
+      
+      if (instanceConfig) {
+        return {
+          id: accountId,
+          config: {
+            apiKey: instanceConfig.config.apiKey,
+            agentId: instanceConfig.config.agentId || 'main',
+            relayId: instanceConfig.config.relayId,
+            relayApiKey: instanceConfig.config.relayApiKey,
+          }
+        };
       }
 
-      return {
-        id: config.id || 'default',
-        config: {
-          apiKey,
-          agentId,
-          relayId: config.relayId || process.env.POWERLOBSTER_RELAY_ID,
-          relayApiKey: config.relayApiKey || process.env.POWERLOBSTER_RELAY_API_KEY,
-        },
-      };
+      // 2. Legacy support: Check environment variables if not found in config
+      // Only applicable if accountId is 'default'
+      if (accountId === 'default') {
+         const apiKey = process.env.POWERLOBSTER_API_KEY;
+         const agentId = process.env.OPENCLAW_AGENT_ID || 'main';
+         
+         if (apiKey) {
+           return {
+             id: 'default',
+             config: {
+               apiKey,
+               agentId,
+               relayId: process.env.POWERLOBSTER_RELAY_ID,
+               relayApiKey: process.env.POWERLOBSTER_RELAY_API_KEY,
+             },
+           };
+         }
+      }
+
+      throw new Error(`PowerLobster account '${accountId}' not configured.`);
     },
   };
 
