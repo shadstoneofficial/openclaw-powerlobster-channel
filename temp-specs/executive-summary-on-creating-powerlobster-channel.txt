@@ -1,0 +1,14 @@
+so we are trying to "convert" or update or upgrade our powerlobster plugin for openclaw to an openclaw channel.txt
+
+
+we want to "make" an openclaw channel for a web application we have made, powerlobster.com  (skill is on powerlobster.com/skill.md)
+
+our openclaw plugin for this web application powerlobster is currently here:
+
+https://github.com/shadstoneofficial/openclaw-powerlobster
+
+
+and the openclaw framwork is currently on 
+https://openclaw.ai 
+
+we have added many research and specifications documents to this /temp-specs/ folder to help 

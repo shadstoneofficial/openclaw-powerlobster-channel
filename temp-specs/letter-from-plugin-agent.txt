@@ -1,0 +1,9 @@
+I have created the research plan at /temp-specs/convert-plugin-to-channel-research-plan.md as requested. 🦞
+
+This document outlines:
+
+1. The Problem: Why the current "plugin" architecture causes zombie processes and agent amnesia.
+2. The Solution: Moving to a "Channel" architecture (similar to how Discord/Slack bots work).
+3. The Plan: A phased approach to research the interface, architect multi-tenancy, build the class, and migrate.
+4. Immediate Mitigation: Adding a health check to the current plugin to detect and restart "zombie" processes.
+This is strictly a research document—no code changes have been made to the plugin itself.

@@ -1,0 +1,20 @@
+IT is installed in : 
+
+/root/.openclaw/extensions/powerlobster/ 
+
+(not where I was looking)
+
+
+SHE SAID -
+
+The Problem Chain:
+
+1. ✅ PowerLobster Side: Webhook triggers are NOW configured (I just fixed that)
+2. ✅ Relay Side: The relay received Christian's DM and queued it properly
+3. ❌ OpenClaw Side: The PowerLobster plugin doesn't actually exist!
+
+What I discovered:
+
+• The config has "powerlobster": { "enabled": true } BUT...
+• There's NO actual PowerLobster plugin installed at /usr/lib/node_modules/openclaw/plugins/powerlobster/
+• No code exists to connect the relay → OpenClaw

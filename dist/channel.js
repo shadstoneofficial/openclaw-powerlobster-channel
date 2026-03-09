@@ -1,0 +1,145 @@
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.powerLobsterChannel = void 0;
+const client_1 = require("./client");
+const socket_1 = require("./socket");
+const CHANNEL_ID = 'powerlobster';
+class PowerLobsterChannel {
+    constructor() {
+        this.id = CHANNEL_ID;
+        this.meta = {
+            name: 'PowerLobster',
+            version: '1.0.0',
+            description: 'PowerLobster Channel for OpenClaw',
+            icon: '🦞',
+        };
+        this.capabilities = {
+            text: true,
+        };
+        this.clients = new Map();
+        this.sockets = new Map();
+        this.config = {
+            resolveAccount: async (config) => {
+                // Legacy support: Check environment variables if config is empty/missing key
+                const apiKey = config.apiKey || process.env.POWERLOBSTER_API_KEY;
+                const agentId = config.agentId || process.env.OPENCLAW_AGENT_ID || 'main';
+                if (!apiKey) {
+                    throw new Error('PowerLobster API Key is required (config.apiKey or POWERLOBSTER_API_KEY env var)');
+                }
+                return {
+                    id: config.id || 'default',
+                    config: {
+                        apiKey,
+                        agentId,
+                        relayId: config.relayId || process.env.POWERLOBSTER_RELAY_ID,
+                        relayApiKey: config.relayApiKey || process.env.POWERLOBSTER_RELAY_API_KEY,
+                    },
+                };
+            },
+        };
+        this.gateway = {
+            startAccount: async (ctx) => {
+                const { account } = ctx;
+                const config = account.config;
+                const accountId = account.id;
+                console.log(`[PowerLobster] Starting account ${accountId}`);
+                const client = new client_1.PowerLobsterClient(config);
+                this.clients.set(accountId, client);
+                const socket = new socket_1.PowerLobsterSocket(config);
+                this.sockets.set(accountId, socket);
+                socket.on('connected', () => {
+                    console.log(`[PowerLobster] Account ${accountId} connected`);
+                });
+                socket.on('message', async (event) => {
+                    console.log(`[PowerLobster] Received event: ${event.type}`, event);
+                    await this.handleEvent(ctx, event);
+                });
+                socket.connect();
+            },
+            stopAccount: async (ctx) => {
+                const accountId = ctx.account.id;
+                const socket = this.sockets.get(accountId);
+                if (socket) {
+                    socket.disconnect();
+                    this.sockets.delete(accountId);
+                }
+                this.clients.delete(accountId);
+            },
+        };
+        this.outbound = {
+            sendText: async (ctx) => {
+                const { target, content } = ctx;
+                const accountId = target.accountId;
+                const client = this.clients.get(accountId);
+                if (!client) {
+                    throw new Error(`PowerLobster client for account ${accountId} not found`);
+                }
+                // Determine if it's a DM or other type based on peer.id or type
+                // Assuming peer.id is the user ID for DMs
+                try {
+                    await client.sendDM(target.peer.id, content);
+                    return { success: true };
+                }
+                catch (err) {
+                    console.error(`[PowerLobster] Failed to send message: ${err.message}`);
+                    return { success: false, error: err.message };
+                }
+            },
+        };
+    }
+    async handleEvent(ctx, event) {
+        const { account, channelRuntime } = ctx;
+        const accountId = account.id;
+        let peerId = '';
+        let content = '';
+        let eventType = 'unknown';
+        if (event.type === 'dm.received') {
+            const dmEvent = event;
+            peerId = dmEvent.payload.from;
+            content = dmEvent.payload.content;
+            eventType = 'dm';
+        }
+        else if (event.type === 'wave.started') {
+            // Handle wave started
+            const waveEvent = event;
+            content = `Wave started: ${waveEvent.payload.title}`;
+            peerId = 'wave-system'; // or a specific system user
+            eventType = 'wave';
+        }
+        else {
+            // Handle other events or ignore
+            console.log(`[PowerLobster] Unhandled event type: ${event.type}`);
+            return;
+        }
+        // Resolve route
+        try {
+            const route = await channelRuntime.routing.resolveAgentRoute({
+                channel: this.id,
+                accountId: accountId,
+                peer: {
+                    id: peerId,
+                    type: eventType, // 'user' or 'group' or custom type
+                },
+                content: content,
+            });
+            if (route && route.agentId) {
+                // Dispatch to agent
+                await channelRuntime.dispatch(route.agentId, {
+                    ...event,
+                    // Add standard channel event properties if needed
+                    channelId: this.id,
+                    accountId: accountId,
+                    senderId: peerId,
+                    content: content
+                });
+            }
+            else {
+                console.warn(`[PowerLobster] No route resolved for event from ${peerId}`);
+            }
+        }
+        catch (err) {
+            console.error(`[PowerLobster] Error routing event:`, err);
+        }
+    }
+}
+exports.powerLobsterChannel = new PowerLobsterChannel();
