@@ -79,7 +79,7 @@ export interface ChannelOutboundAdapter {
 
 export interface ChannelConfigAdapter<ResolvedAccount = any> {
   // Simplified config adapter
-  listAccountIds: (config: any) => Promise<string[]>;
+  listAccountIds: (config: any) => string[];
   resolveAccount: (config: any, accountId?: string) => Promise<ResolvedAccount>;
 }
 

@@ -41,7 +41,7 @@ class PowerLobsterChannel implements ChannelPlugin<PowerLobsterAccount> {
   private pollers = new Map<string, PowerLobsterPoller>();
 
   config: ChannelConfigAdapter<PowerLobsterAccount> = {
-    listAccountIds: async (config: any) => {
+    listAccountIds: (config: any) => {
       // Check for accounts in channels.powerlobster.instances
       const instances = config.channels?.powerlobster?.instances ?? [];
       if (Array.isArray(instances) && instances.length > 0) {

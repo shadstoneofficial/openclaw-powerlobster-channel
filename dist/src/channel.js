@@ -25,7 +25,7 @@ class PowerLobsterChannel {
         this.clients = new Map();
         this.pollers = new Map();
         this.config = {
-            listAccountIds: async (config) => {
+            listAccountIds: (config) => {
                 // Check for accounts in channels.powerlobster.instances
                 const instances = config.channels?.powerlobster?.instances ?? [];
                 if (Array.isArray(instances) && instances.length > 0) {
