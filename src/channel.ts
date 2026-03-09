@@ -6,13 +6,13 @@ import {
   ChannelConfigAdapter,
   ChannelGatewayContext,
   ChannelOutboundContext,
-  PowerLobsterConfig,
   PowerLobsterAccount,
   ResolvedAgentRoute,
   PowerLobsterEvent,
   PowerLobsterDMEvent,
   PowerLobsterWaveEvent,
   ChannelId,
+  MsgContext, // Added MsgContext
 } from './types';
 import { PowerLobsterClient } from './client';
 import { PowerLobsterPoller } from './poller';
@@ -211,15 +211,31 @@ class PowerLobsterChannel implements ChannelPlugin<PowerLobsterAccount> {
       }
 
       if (agentId) {
-        // Dispatch to agent
-        await channelRuntime.dispatch(agentId, {
-            ...event,
-            type: eventType, // Ensure normalized type is passed
-            payload: eventPayload, // Ensure normalized payload is passed
-            channelId: this.id,
-            accountId: accountId,
-            senderId: peerId,
-            content: content
+        // Build MsgContext
+        const msgContext: MsgContext = {
+          SessionKey: `powerlobster:dm:${peerId}`, // Simplified session key
+          Type: "message",
+          Body: content,
+          From: peerId,
+          Channel: this.id,
+          Platform: "powerlobster",
+        };
+
+        // Dispatch and handle reply
+        await channelRuntime.reply.dispatchReplyWithBufferedBlockDispatcher({
+          ctx: msgContext,
+          cfg: ctx.cfg,
+          dispatcherOptions: {
+            deliver: async (payload: { text: string }, info: any) => {
+              // Send agent's reply back to PowerLobster
+              const client = this.clients.get(accountId);
+              if (client) {
+                 await client.sendDM(peerId, payload.text);
+              } else {
+                 console.error(`[PowerLobster] Client for account ${accountId} not found during delivery`);
+              }
+            },
+          }
         });
       } else {
           console.warn(`[PowerLobster] No agent resolved for event from ${peerId}`);

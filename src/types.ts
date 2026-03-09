@@ -22,13 +22,32 @@ export interface ChannelCapabilities {
   [key: string]: boolean | undefined;
 }
 
+export interface MsgContext {
+  SessionKey: string;
+  Type: string;
+  Body: string;
+  From: string;
+  Channel: string;
+  Platform: string;
+}
+
 export interface ChannelGatewayContext<ResolvedAccount = any> {
   account: ResolvedAccount;
+  cfg: any; // Added cfg
   channelRuntime: {
     routing: {
       resolveAgentRoute: (input: ResolveAgentRouteInput) => Promise<ResolvedAgentRoute>;
     };
-    dispatch: (agentId: string, event: any) => Promise<void>; // Simplified dispatch
+    // Replaced simplified dispatch with reply dispatcher
+    reply: {
+      dispatchReplyWithBufferedBlockDispatcher: (params: {
+        ctx: MsgContext;
+        cfg: any;
+        dispatcherOptions: {
+          deliver: (payload: { text: string }, info: any) => Promise<void>;
+        };
+      }) => Promise<void>;
+    };
   };
 }
 
