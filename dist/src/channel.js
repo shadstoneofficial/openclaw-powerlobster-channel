@@ -183,23 +183,31 @@ class PowerLobsterChannel {
                     Channel: this.id,
                     Platform: "powerlobster",
                 };
+                // DEBUG: Check channelRuntime structure
+                console.log('[PowerLobster] channelRuntime keys:', Object.keys(channelRuntime));
+                console.log('[PowerLobster] reply exists?:', !!channelRuntime.reply);
                 // Dispatch and handle reply
-                await channelRuntime.reply.dispatchReplyWithBufferedBlockDispatcher({
-                    ctx: msgContext,
-                    cfg: ctx.cfg,
-                    dispatcherOptions: {
-                        deliver: async (payload, info) => {
-                            // Send agent's reply back to PowerLobster
-                            const client = this.clients.get(accountId);
-                            if (client) {
-                                await client.sendDM(peerId, payload.text);
-                            }
-                            else {
-                                console.error(`[PowerLobster] Client for account ${accountId} not found during delivery`);
-                            }
-                        },
-                    }
-                });
+                if (channelRuntime.reply && typeof channelRuntime.reply.dispatchReplyWithBufferedBlockDispatcher === 'function') {
+                    await channelRuntime.reply.dispatchReplyWithBufferedBlockDispatcher({
+                        ctx: msgContext,
+                        cfg: ctx.cfg,
+                        dispatcherOptions: {
+                            deliver: async (payload, info) => {
+                                // Send agent's reply back to PowerLobster
+                                const client = this.clients.get(accountId);
+                                if (client) {
+                                    await client.sendDM(peerId, payload.text);
+                                }
+                                else {
+                                    console.error(`[PowerLobster] Client for account ${accountId} not found during delivery`);
+                                }
+                            },
+                        }
+                    });
+                }
+                else {
+                    console.error('[PowerLobster] channelRuntime.reply.dispatchReplyWithBufferedBlockDispatcher not found!');
+                }
             }
             else {
                 console.warn(`[PowerLobster] No agent resolved for event from ${peerId}`);
