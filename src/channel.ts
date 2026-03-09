@@ -57,7 +57,7 @@ class PowerLobsterChannel implements ChannelPlugin<PowerLobsterAccount> {
       return [];
     },
 
-    resolveAccount: async (config: any, accountId: string = 'default') => {
+    resolveAccount: (config: any, accountId: string = 'default') => {
       // 1. Try to find in instances list
       const instances = config.channels?.powerlobster?.instances ?? [];
       const instanceConfig = instances.find((inst: any) => inst.id === accountId);

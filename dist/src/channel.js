@@ -38,7 +38,7 @@ class PowerLobsterChannel {
                 }
                 return [];
             },
-            resolveAccount: async (config, accountId = 'default') => {
+            resolveAccount: (config, accountId = 'default') => {
                 // 1. Try to find in instances list
                 const instances = config.channels?.powerlobster?.instances ?? [];
                 const instanceConfig = instances.find((inst) => inst.id === accountId);

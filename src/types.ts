@@ -80,7 +80,7 @@ export interface ChannelOutboundAdapter {
 export interface ChannelConfigAdapter<ResolvedAccount = any> {
   // Simplified config adapter
   listAccountIds: (config: any) => string[];
-  resolveAccount: (config: any, accountId?: string) => Promise<ResolvedAccount>;
+  resolveAccount: (config: any, accountId?: string) => ResolvedAccount;
 }
 
 export interface ChannelPlugin<ResolvedAccount = any> {
