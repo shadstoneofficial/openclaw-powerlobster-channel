@@ -199,29 +199,32 @@ class PowerLobsterChannel {
             return;
         }
         // Resolve route
+        let agentId = 'main'; // Default fallback
         try {
-            // Create a simplified route directly if resolveAgentRoute fails
-            // This is a common pattern in simple channels
-            let agentId = 'main'; // Default fallback
-            try {
-                const route = await channelRuntime.routing.resolveAgentRoute({
-                    channel: this.id,
-                    accountId: accountId,
-                    peer: {
-                        id: peerId,
-                        type: type,
-                    },
-                    content: content,
-                });
-                if (route && route.agentId) {
-                    agentId = route.agentId;
-                }
+            // Direct routing to configured agent ID (primary method for PowerLobster)
+            if (account.config.agentId) {
+                agentId = account.config.agentId;
             }
-            catch (routingErr) {
-                console.warn(`[PowerLobster] Routing resolution failed, falling back to configured agentId:`, routingErr);
-                // Fallback to the agentId configured in the account
-                if (account.config.agentId) {
-                    agentId = account.config.agentId;
+            else {
+                // Fallback to dynamic routing if no specific agent configured
+                // This is rare for PowerLobster but kept for advanced use cases
+                try {
+                    const route = await channelRuntime.routing.resolveAgentRoute({
+                        channel: this.id,
+                        accountId: accountId,
+                        peer: {
+                            id: peerId,
+                            type: type,
+                        },
+                        content: content,
+                    });
+                    if (route && route.agentId) {
+                        agentId = route.agentId;
+                    }
+                }
+                catch (routingErr) {
+                    console.warn(`[PowerLobster] Routing resolution failed, using default 'main':`, routingErr);
+                    agentId = 'main';
                 }
             }
             if (agentId) {
