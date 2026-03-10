@@ -7,12 +7,15 @@ exports.PowerLobsterPoller = void 0;
 const events_1 = require("events");
 const node_fetch_1 = __importDefault(require("node-fetch"));
 const RELAY_BASE_URL = 'https://relay.powerlobster.com/api/v1';
+const API_BASE_URL = 'https://powerlobster.com/api/agent';
 const POLLING_INTERVAL = 30000; // 30 seconds
+const HEARTBEAT_INTERVAL = 15 * 60 * 1000; // 15 minutes
 class PowerLobsterPoller extends events_1.EventEmitter {
     constructor(config) {
         super();
         this.isPolling = false;
         this.timer = null;
+        this.heartbeatTimer = null;
         this.config = config;
     }
     start() {
@@ -25,6 +28,7 @@ class PowerLobsterPoller extends events_1.EventEmitter {
         this.isPolling = true;
         console.log(`[PowerLobster] Starting polling for relay ${this.config.relayId}...`);
         this.poll();
+        this.startHeartbeat();
     }
     stop() {
         this.isPolling = false;
@@ -32,6 +36,36 @@ class PowerLobsterPoller extends events_1.EventEmitter {
             clearTimeout(this.timer);
             this.timer = null;
         }
+        if (this.heartbeatTimer) {
+            clearTimeout(this.heartbeatTimer);
+            this.heartbeatTimer = null;
+        }
+    }
+    async startHeartbeat() {
+        if (!this.isPolling)
+            return;
+        try {
+            await this.sendHeartbeat();
+        }
+        catch (err) {
+            console.error('[PowerLobster] Heartbeat failed:', err);
+        }
+        if (this.isPolling) {
+            this.heartbeatTimer = setTimeout(() => this.startHeartbeat(), HEARTBEAT_INTERVAL);
+        }
+    }
+    async sendHeartbeat() {
+        console.log('[PowerLobster] Sending heartbeat...');
+        const response = await (0, node_fetch_1.default)(`${API_BASE_URL}/heartbeat`, {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${this.config.apiKey}`
+            }
+        });
+        if (!response.ok) {
+            throw new Error(`Heartbeat API Error: ${response.status} ${response.statusText}`);
+        }
+        console.log('[PowerLobster] Heartbeat sent successfully');
     }
     async poll() {
         if (!this.isPolling)

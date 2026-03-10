@@ -4,12 +4,15 @@ import { PowerLobsterConfig } from './types';
 import fetch from 'node-fetch';
 
 const RELAY_BASE_URL = 'https://relay.powerlobster.com/api/v1';
+const API_BASE_URL = 'https://powerlobster.com/api/agent';
 const POLLING_INTERVAL = 30000; // 30 seconds
+const HEARTBEAT_INTERVAL = 15 * 60 * 1000; // 15 minutes
 
 export class PowerLobsterPoller extends EventEmitter {
   private config: PowerLobsterConfig;
   private isPolling = false;
   private timer: NodeJS.Timeout | null = null;
+  private heartbeatTimer: NodeJS.Timeout | null = null;
 
   constructor(config: PowerLobsterConfig) {
     super();
@@ -27,6 +30,7 @@ export class PowerLobsterPoller extends EventEmitter {
     this.isPolling = true;
     console.log(`[PowerLobster] Starting polling for relay ${this.config.relayId}...`);
     this.poll();
+    this.startHeartbeat();
   }
 
   stop() {
@@ -35,6 +39,39 @@ export class PowerLobsterPoller extends EventEmitter {
       clearTimeout(this.timer);
       this.timer = null;
     }
+    if (this.heartbeatTimer) {
+      clearTimeout(this.heartbeatTimer);
+      this.heartbeatTimer = null;
+    }
+  }
+
+  private async startHeartbeat() {
+    if (!this.isPolling) return;
+
+    try {
+        await this.sendHeartbeat();
+    } catch (err) {
+        console.error('[PowerLobster] Heartbeat failed:', err);
+    }
+
+    if (this.isPolling) {
+        this.heartbeatTimer = setTimeout(() => this.startHeartbeat(), HEARTBEAT_INTERVAL);
+    }
+  }
+
+  private async sendHeartbeat() {
+    console.log('[PowerLobster] Sending heartbeat...');
+    const response = await fetch(`${API_BASE_URL}/heartbeat`, {
+        method: 'POST',
+        headers: {
+            'Authorization': `Bearer ${this.config.apiKey}`
+        }
+    });
+
+    if (!response.ok) {
+        throw new Error(`Heartbeat API Error: ${response.status} ${response.statusText}`);
+    }
+    console.log('[PowerLobster] Heartbeat sent successfully');
   }
 
   private async poll() {
