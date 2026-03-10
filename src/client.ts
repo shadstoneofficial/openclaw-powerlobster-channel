@@ -28,7 +28,9 @@ export class PowerLobsterClient {
     });
 
     if (!response.ok) {
-      throw new Error(`PowerLobster API Error: ${response.status} ${response.statusText}`);
+      const errorBody = await response.text();
+      console.error(`[PowerLobster] API ${response.status} ${response.statusText} for ${url}: ${errorBody}`);
+      throw new Error(`PowerLobster API Error: ${response.status} ${response.statusText} - ${errorBody}`);
     }
 
     return response.json();
