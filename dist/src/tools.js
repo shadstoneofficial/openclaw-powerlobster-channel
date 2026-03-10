@@ -23,12 +23,12 @@ const getTools = () => {
             parameters: {
                 type: 'object',
                 properties: {
-                    accountId: { type: 'string', description: 'Optional account ID to use' }
+                    account_id: { type: 'string', description: 'Optional account ID to use' }
                 },
                 required: [],
             },
-            handler: async ({ accountId }) => {
-                const client = getClient(accountId);
+            handler: async ({ account_id }) => {
+                const client = getClient(account_id);
                 return await client.sendHeartbeat();
             },
         },
@@ -38,14 +38,16 @@ const getTools = () => {
             parameters: {
                 type: 'object',
                 properties: {
-                    waveId: { type: 'string', description: 'The ID of the wave to complete' },
-                    accountId: { type: 'string', description: 'Optional account ID to use' }
+                    wave_id: { type: 'string', description: 'The ID of the wave to complete' },
+                    account_id: { type: 'string', description: 'Optional account ID to use' }
                 },
-                required: ['waveId'],
+                required: ['wave_id'],
             },
-            handler: async ({ waveId, accountId }) => {
-                const client = getClient(accountId);
-                return await client.completeWave(waveId);
+            handler: async ({ wave_id, account_id }) => {
+                if (!wave_id)
+                    throw new Error('wave_id is required');
+                const client = getClient(account_id);
+                return await client.completeWave(wave_id);
             },
         },
         {
@@ -54,20 +56,20 @@ const getTools = () => {
             parameters: {
                 type: 'object',
                 properties: {
-                    agentId: { type: 'string', description: 'Agent ID or handle. Use "me" for self.' },
+                    agent_id: { type: 'string', description: 'Agent ID or handle. Use "me" for self.' },
                     wave_time: { type: 'string', description: 'ISO 8601 datetime for the wave start (e.g., 2026-03-10T14:00:00Z)' },
-                    taskId: { type: 'string', description: 'Optional: Task ID to work on during this wave' },
+                    task_id: { type: 'string', description: 'Optional: Task ID to work on during this wave' },
                     force: { type: 'boolean', description: 'Optional: Set true to overwrite an existing slot' },
-                    accountId: { type: 'string', description: 'Optional account ID to use' }
+                    account_id: { type: 'string', description: 'Optional account ID to use' }
                 },
                 required: ['wave_time'],
             },
-            handler: async ({ agentId, wave_time, taskId, force, accountId }) => {
+            handler: async ({ agent_id, wave_time, task_id, force, account_id }) => {
                 if (!wave_time) {
                     throw new Error('wave_time is required');
                 }
-                const client = getClient(accountId);
-                return await client.createWave(agentId || 'me', wave_time, taskId, force);
+                const client = getClient(account_id);
+                return await client.createWave(agent_id || 'me', wave_time, task_id, force);
             },
         },
         {
@@ -76,15 +78,15 @@ const getTools = () => {
             parameters: {
                 type: 'object',
                 properties: {
-                    userId: { type: 'string', description: 'The user ID or handle to send to' },
+                    user_id: { type: 'string', description: 'The user ID or handle to send to' },
                     content: { type: 'string', description: 'The message content' },
-                    accountId: { type: 'string', description: 'Optional account ID to use' }
+                    account_id: { type: 'string', description: 'Optional account ID to use' }
                 },
-                required: ['userId', 'content'],
+                required: ['user_id', 'content'],
             },
-            handler: async ({ userId, content, accountId }) => {
-                const client = getClient(accountId);
-                return await client.sendDM(userId, content);
+            handler: async ({ user_id, content, account_id }) => {
+                const client = getClient(account_id);
+                return await client.sendDM(user_id, content);
             },
         },
         {
@@ -94,12 +96,12 @@ const getTools = () => {
                 type: 'object',
                 properties: {
                     content: { type: 'string', description: 'The post content' },
-                    accountId: { type: 'string', description: 'Optional account ID to use' }
+                    account_id: { type: 'string', description: 'Optional account ID to use' }
                 },
                 required: ['content'],
             },
-            handler: async ({ content, accountId }) => {
-                const client = getClient(accountId);
+            handler: async ({ content, account_id }) => {
+                const client = getClient(account_id);
                 return await client.postUpdate(content);
             },
         },
@@ -109,15 +111,15 @@ const getTools = () => {
             parameters: {
                 type: 'object',
                 properties: {
-                    taskId: { type: 'string', description: 'The task ID' },
+                    task_id: { type: 'string', description: 'The task ID' },
                     comment: { type: 'string', description: 'The comment content' },
-                    accountId: { type: 'string', description: 'Optional account ID to use' }
+                    account_id: { type: 'string', description: 'Optional account ID to use' }
                 },
-                required: ['taskId', 'comment'],
+                required: ['task_id', 'comment'],
             },
-            handler: async ({ taskId, comment, accountId }) => {
-                const client = getClient(accountId);
-                return await client.commentTask(taskId, comment);
+            handler: async ({ task_id, comment, account_id }) => {
+                const client = getClient(account_id);
+                return await client.commentTask(task_id, comment);
             },
         },
         {
@@ -126,15 +128,15 @@ const getTools = () => {
             parameters: {
                 type: 'object',
                 properties: {
-                    taskId: { type: 'string', description: 'The task ID' },
+                    task_id: { type: 'string', description: 'The task ID' },
                     status: { type: 'string', description: 'The new status' },
-                    accountId: { type: 'string', description: 'Optional account ID to use' }
+                    account_id: { type: 'string', description: 'Optional account ID to use' }
                 },
-                required: ['taskId', 'status'],
+                required: ['task_id', 'status'],
             },
-            handler: async ({ taskId, status, accountId }) => {
-                const client = getClient(accountId);
-                return await client.updateTaskStatus(taskId, status);
+            handler: async ({ task_id, status, account_id }) => {
+                const client = getClient(account_id);
+                return await client.updateTaskStatus(task_id, status);
             },
         },
     ];
