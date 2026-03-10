@@ -24,6 +24,7 @@ class PowerLobsterChannel {
         };
         this.clients = new Map();
         this.pollers = new Map();
+        this.runningPromises = new Map();
         this.config = {
             listAccountIds: (config) => {
                 // Check for accounts in channels.powerlobster.instances
@@ -99,7 +100,9 @@ class PowerLobsterChannel {
                 poller.start();
                 // Keep the channel "alive" by returning a promise that never resolves
                 // This mimics a long-running connection process
-                return new Promise(() => { });
+                return new Promise((resolve) => {
+                    this.runningPromises.set(accountId, resolve);
+                });
             },
             stopAccount: async (ctx) => {
                 const accountId = ctx.account.id;
@@ -109,6 +112,12 @@ class PowerLobsterChannel {
                     this.pollers.delete(accountId);
                 }
                 this.clients.delete(accountId);
+                // Resolve the startAccount promise to let it exit cleanly
+                const resolve = this.runningPromises.get(accountId);
+                if (resolve) {
+                    resolve();
+                    this.runningPromises.delete(accountId);
+                }
             },
         };
         this.outbound = {

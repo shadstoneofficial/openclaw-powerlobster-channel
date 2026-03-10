@@ -39,6 +39,7 @@ class PowerLobsterChannel implements ChannelPlugin<PowerLobsterAccount> {
 
   private clients = new Map<string, PowerLobsterClient>();
   private pollers = new Map<string, PowerLobsterPoller>();
+  private runningPromises = new Map<string, () => void>();
 
   config: ChannelConfigAdapter<PowerLobsterAccount> = {
     listAccountIds: (config: any) => {
@@ -131,7 +132,9 @@ class PowerLobsterChannel implements ChannelPlugin<PowerLobsterAccount> {
       
       // Keep the channel "alive" by returning a promise that never resolves
       // This mimics a long-running connection process
-      return new Promise(() => {});
+      return new Promise<void>((resolve) => {
+        this.runningPromises.set(accountId, resolve);
+      });
     },
 
     stopAccount: async (ctx: ChannelGatewayContext<PowerLobsterAccount>) => {
@@ -142,6 +145,13 @@ class PowerLobsterChannel implements ChannelPlugin<PowerLobsterAccount> {
         this.pollers.delete(accountId);
       }
       this.clients.delete(accountId);
+
+      // Resolve the startAccount promise to let it exit cleanly
+      const resolve = this.runningPromises.get(accountId);
+      if (resolve) {
+        resolve();
+        this.runningPromises.delete(accountId);
+      }
     },
   };
 
