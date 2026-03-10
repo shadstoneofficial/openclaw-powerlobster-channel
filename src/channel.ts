@@ -199,7 +199,7 @@ class PowerLobsterChannel implements ChannelPlugin<PowerLobsterAccount> {
       content = eventPayload.content;
       type = 'dm';
     } else if (eventType === 'wave.started') {
-        content = `Wave started: ${eventPayload.title}`;
+        content = `🌊 Wave started!\nTask: ${eventPayload.task_title || eventPayload.title}\nWave ID: ${eventPayload.wave_id}\nTime: ${eventPayload.wave_time}`;
         peerId = 'wave-system'; 
         type = 'wave';
     } else if (eventType === 'task.assigned') {
@@ -215,11 +215,11 @@ class PowerLobsterChannel implements ChannelPlugin<PowerLobsterAccount> {
         peerId = eventPayload.author || 'mention-system';
         type = 'mention';
     } else if (eventType === 'wave.reminder') {
-        content = `Wave reminder: ${eventPayload.title} starts in 60 minutes`;
+        content = `Wave reminder: ${eventPayload.task_title || eventPayload.title} starts in 60 minutes`;
         peerId = 'wave-system';
         type = 'wave';
     } else if (eventType === 'wave.scheduled') {
-        content = `Wave scheduled: ${eventPayload.title} at ${eventPayload.time}`;
+        content = `Wave scheduled: ${eventPayload.task_title || eventPayload.title} at ${eventPayload.wave_time || eventPayload.time}`;
         peerId = 'wave-system';
         type = 'wave';
     } else {
