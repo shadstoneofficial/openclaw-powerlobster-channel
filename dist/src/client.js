@@ -58,12 +58,13 @@ class PowerLobsterClient {
             wave_id: waveId
         });
     }
-    async createWave(agentId, waveTime, taskId, force) {
-        return this.request(`${MISSION_CONTROL_URL}/schedule/${agentId}`, 'POST', {
-            wave_time: waveTime,
-            ...(taskId && { task_id: taskId }),
-            ...(force !== undefined && { force })
-        });
+    async createWave(agentId, wave_time, taskId, force) {
+        const body = { wave_time };
+        if (taskId)
+            body.task_id = taskId;
+        if (force !== undefined)
+            body.force = force;
+        return this.request(`${MISSION_CONTROL_URL}/schedule/${agentId}`, 'POST', body);
     }
     async sendHeartbeat() {
         return this.request(`${BASE_URL}/heartbeat`, 'POST');

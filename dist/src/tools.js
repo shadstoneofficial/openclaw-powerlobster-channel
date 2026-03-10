@@ -55,16 +55,19 @@ const getTools = () => {
                 type: 'object',
                 properties: {
                     agentId: { type: 'string', description: 'Agent ID or handle. Use "me" for self.' },
-                    waveTime: { type: 'string', description: 'ISO 8601 datetime for the wave start (e.g., 2026-03-10T14:00:00Z)' },
+                    wave_time: { type: 'string', description: 'ISO 8601 datetime for the wave start (e.g., 2026-03-10T14:00:00Z)' },
                     taskId: { type: 'string', description: 'Optional: Task ID to work on during this wave' },
                     force: { type: 'boolean', description: 'Optional: Set true to overwrite an existing slot' },
                     accountId: { type: 'string', description: 'Optional account ID to use' }
                 },
-                required: ['waveTime'],
+                required: ['wave_time'],
             },
-            handler: async ({ agentId, waveTime, taskId, force, accountId }) => {
+            handler: async ({ agentId, wave_time, taskId, force, accountId }) => {
+                if (!wave_time) {
+                    throw new Error('wave_time is required');
+                }
                 const client = getClient(accountId);
-                return await client.createWave(agentId || 'me', waveTime, taskId, force);
+                return await client.createWave(agentId || 'me', wave_time, taskId, force);
             },
         },
         {

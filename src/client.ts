@@ -73,12 +73,12 @@ export class PowerLobsterClient {
     });
   }
 
-  async createWave(agentId: string, waveTime: string, taskId?: string, force?: boolean) {
-    return this.request(`${MISSION_CONTROL_URL}/schedule/${agentId}`, 'POST', {
-      wave_time: waveTime,
-      ...(taskId && { task_id: taskId }),
-      ...(force !== undefined && { force })
-    });
+  async createWave(agentId: string, wave_time: string, taskId?: string, force?: boolean) {
+    const body: Record<string, any> = { wave_time };
+    if (taskId) body.task_id = taskId;
+    if (force !== undefined) body.force = force;
+    
+    return this.request(`${MISSION_CONTROL_URL}/schedule/${agentId}`, 'POST', body);
   }
 
   async sendHeartbeat() {
