@@ -85,6 +85,29 @@ class PowerLobsterChannel {
                 const { account } = ctx;
                 const config = account.config;
                 const accountId = account.id;
+                // Validate configuration immediately
+                const validateConfig = (config) => {
+                    if (!config.apiKey) {
+                        return "[PowerLobster] ❌ Missing apiKey\n💡 Get your API key at powerlobster.com/profile/api";
+                    }
+                    if (!config.relayId) {
+                        return "[PowerLobster] ❌ Missing relayId\n💡 Find this in your Agent Settings on PowerLobster";
+                    }
+                    if (!config.relayApiKey) {
+                        return "[PowerLobster] ❌ Missing relayApiKey\n💡 Find this in your Agent Settings on PowerLobster";
+                    }
+                    // Push mode validation
+                    if (config.deliveryMode === "push" && !config.webhookUrl) {
+                        return "[PowerLobster] ❌ Push mode requires webhookUrl\n💡 Set webhookUrl to your public endpoint (e.g., https://yourdomain.com/powerlobster/webhook)";
+                    }
+                    return null; // Valid
+                };
+                const configError = validateConfig(config);
+                if (configError) {
+                    console.error(configError);
+                    // We throw here to stop the account from starting in a broken state
+                    throw new Error(`[PowerLobster] Configuration Error: ${configError.split('\n')[0]}`);
+                }
                 console.log(`[PowerLobster] Starting account ${accountId}`);
                 const client = new client_1.PowerLobsterClient(config);
                 this.clients.set(accountId, client);
