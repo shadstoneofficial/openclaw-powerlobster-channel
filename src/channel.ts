@@ -75,6 +75,9 @@ class PowerLobsterChannel implements ChannelPlugin<PowerLobsterAccount> {
             agentId: instanceConfig.config.agentId || 'main',
             relayId: instanceConfig.config.relayId,
             relayApiKey: instanceConfig.config.relayApiKey,
+            deliveryMode: instanceConfig.config.deliveryMode,
+            webhookUrl: instanceConfig.config.webhookUrl,
+            webhookSecret: instanceConfig.config.webhookSecret,
           }
         };
       }
