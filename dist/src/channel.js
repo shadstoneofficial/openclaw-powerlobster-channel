@@ -272,7 +272,7 @@ class PowerLobsterChannel {
             buildChannelSummary: async ({ account, defaultAccountId }) => {
                 // Option 1: Try to read from config object (account) passed in
                 // This works if resolveAccount includes deliveryMode
-                const modeFromConfig = account?.deliveryMode;
+                const modeFromConfig = account?.config?.deliveryMode || account?.deliveryMode;
                 // Option 2: Fallback to poll
                 const mode = modeFromConfig || 'poll';
                 // Note: lastEventTime map is in-memory on Gateway process.

@@ -497,7 +497,7 @@ class PowerLobsterChannel implements ChannelPlugin<PowerLobsterAccount> {
         buildChannelSummary: async ({ account, defaultAccountId }: { account: any; defaultAccountId: string; snapshot?: any }) => {
             // Option 1: Try to read from config object (account) passed in
             // This works if resolveAccount includes deliveryMode
-            const modeFromConfig = account?.deliveryMode;
+            const modeFromConfig = account?.config?.deliveryMode || account?.deliveryMode;
             
             // Option 2: Fallback to poll
             const mode = modeFromConfig || 'poll';
