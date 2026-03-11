@@ -492,29 +492,29 @@ class PowerLobsterChannel implements ChannelPlugin<PowerLobsterAccount> {
   };
 
   // Status reporter for OpenClaw CLI
-  // Using status.buildChannelSummary as required by OpenClaw
-  status = {
-      buildChannelSummary: async ({ account }: { account: string; defaultAccountId?: string }) => {
-          // Calculate time ago
-          const lastEvent = this.lastEventTime.get(account);
-          let timeSinceEvent = 0;
-          if (lastEvent) {
-              timeSinceEvent = Date.now() - lastEvent.getTime();
-          }
+   // Using status.buildChannelSummary as required by OpenClaw
+   status = {
+       buildChannelSummary: async ({ account, defaultAccountId }: { account: any; defaultAccountId: string }) => {
+           // Calculate time ago
+           const lastEvent = this.lastEventTime.get(defaultAccountId);
+           let timeSinceEvent = 0;
+           if (lastEvent) {
+               timeSinceEvent = Date.now() - lastEvent.getTime();
+           }
 
-          const mode = this.accountModes.get(account) || 'unknown';
-          
-          const skillsCount = 5; // Hardcoded based on our bundled skills
+           const mode = this.accountModes.get(defaultAccountId) || (account?.deliveryMode as string) || 'unknown';
+           
+           const skillsCount = 5; // Hardcoded based on our bundled skills
 
-          return {
-              linked: true,
-              // Use self.e164 to show custom info (hack but standard practice)
-              self: { e164: `${mode} mode · ${skillsCount} skills` },
-              // authAgeMs shows as "auth Xs ago" - we use it for "last event"
-              authAgeMs: timeSinceEvent
-          };
-      }
-  };
+           return {
+               linked: true,
+               // Use self.e164 to show custom info (hack but standard practice)
+               self: { e164: `${mode} mode · ${skillsCount} skills` },
+               // authAgeMs shows as "auth Xs ago" - we use it for "last event"
+               authAgeMs: timeSinceEvent
+           };
+       }
+   };
 }
 
 export const powerLobsterChannel = new PowerLobsterChannel();

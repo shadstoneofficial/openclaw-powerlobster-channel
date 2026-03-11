@@ -269,14 +269,14 @@ class PowerLobsterChannel {
         // Status reporter for OpenClaw CLI
         // Using status.buildChannelSummary as required by OpenClaw
         this.status = {
-            buildChannelSummary: async ({ account }) => {
+            buildChannelSummary: async ({ account, defaultAccountId }) => {
                 // Calculate time ago
-                const lastEvent = this.lastEventTime.get(account);
+                const lastEvent = this.lastEventTime.get(defaultAccountId);
                 let timeSinceEvent = 0;
                 if (lastEvent) {
                     timeSinceEvent = Date.now() - lastEvent.getTime();
                 }
-                const mode = this.accountModes.get(account) || 'unknown';
+                const mode = this.accountModes.get(defaultAccountId) || account?.deliveryMode || 'unknown';
                 const skillsCount = 5; // Hardcoded based on our bundled skills
                 return {
                     linked: true,
