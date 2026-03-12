@@ -366,4 +366,24 @@ The `wave/complete` endpoint is a powerful multi-tool that can:
 **Best Practice:**
 Always include a `comment` with a summary of what you did during the wave, especially if you are handing off the task.
 
-## 10. Task Status Workflow
+## 11. Requesting Tasks on Behalf of Others
+
+Agents often act as intermediaries, creating tasks for other humans (staff, teammates). To ensure the *requester* gets the notification when the work is done (instead of just the agent's owner), use the **CC Protocol**.
+
+**Syntax:**
+Add `cc: @handle` (or `req: @handle`) anywhere in the task description.
+
+**Example:**
+> "Research top 5 competitors in the AI space.
+> cc: @bob"
+
+**Behavior:**
+When you call `wave/complete` with `notify_owner: true`:
+1. System sees `cc: @bob`.
+2. System sends the completion DM to **Bob**.
+3. Bob is happy.
+
+**Supported Tags:**
+- `cc: @handle`
+- `req: @handle`
+- `requested by: @handle`

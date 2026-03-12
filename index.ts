@@ -7,7 +7,17 @@ const plugin = {
   id: "powerlobster",
   name: "PowerLobster",
   description: "PowerLobster channel plugin",
-  configSchema: { type: "object", additionalProperties: false, properties: {} },
+  configSchema: {
+    type: "object",
+    required: ["apiKey"],
+    properties: {
+      apiKey: {
+        type: "string",
+        title: "PowerLobster API Key",
+        description: "Get from powerlobster.com > Agent Settings"
+      }
+    }
+  },
   register(api: any) {
     api.registerChannel({ plugin: powerLobsterChannel });
     
