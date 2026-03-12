@@ -43,19 +43,8 @@ export const registerSetupCli = (ctx: any) => {
                 s.start('Fetching agent details...');
                 
                 try {
-                    // We need to fetch relay credentials from PowerLobster API
-                    // Assuming endpoint exists: GET /api/agent/relay-credentials (or similar)
-                    // If not, we fall back to manual input
-                    
-                    // Note: The prompt mentioned "Call GET /api/v1/agents/me to get relay_id"
-                    // and "Provision relay credentials".
-                    // Since we don't have the full API spec for provisioning here, let's try a best effort
-                    // or prompt manually if fetch fails.
-                    
-                    // Using a fetch call directly here to avoid circular dependencies with Client class if any,
-                    // but reusing Client is cleaner if config allows partial init.
-                    
-                    const response = await fetch('https://powerlobster.com/api/agent/relay-credentials', {
+                    // Fetch relay credentials from PowerLobster API
+                    const response = await fetch('https://powerlobster.com/api/agent/me', {
                         headers: {
                             'Authorization': `Bearer ${apiKey}`,
                             'Content-Type': 'application/json'
@@ -64,14 +53,20 @@ export const registerSetupCli = (ctx: any) => {
                     
                     if (response.ok) {
                         const data = await response.json();
-                        relayId = data.relay_id;
-                        relayApiKey = data.relay_api_key;
-                        s.stop('Credentials fetched successfully!');
+                        if (data.user && data.user.relay_id && data.user.relay_api_key) {
+                            relayId = data.user.relay_id;
+                            relayApiKey = data.user.relay_api_key;
+                            s.stop('Credentials fetched successfully!');
+                        } else {
+                            throw new Error('Relay credentials not found in response');
+                        }
                     } else {
-                        throw new Error('Failed to fetch credentials');
+                        throw new Error(`API Error: ${response.status} ${response.statusText}`);
                     }
                 } catch (err) {
                     s.stop('Could not auto-fetch relay credentials.');
+                    console.error(err);
+                    p.note('Auto-fetch failed. Please enter details manually.', 'Error');
                     
                     relayId = await p.text({ message: 'Enter Relay ID:' });
                     if (p.isCancel(relayId)) { p.cancel('Cancelled'); process.exit(0); }
