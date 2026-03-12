@@ -3,7 +3,7 @@ import { powerLobsterChannel } from './src/channel';
 import { getTools } from './src/tools'; // Re-add import
 export { getTools } from './src/tools';
 
-import { registerSetupCli } from './src/cli';
+import { createCliRegistrar } from './src/cli';
 
 const plugin = {
   id: "powerlobster",
@@ -74,7 +74,7 @@ const plugin = {
     
     // Register CLI command
     if (typeof api.registerCli === 'function') {
-        api.registerCli(registerSetupCli);
+        api.registerCli(createCliRegistrar(api));
     }
   },
 };

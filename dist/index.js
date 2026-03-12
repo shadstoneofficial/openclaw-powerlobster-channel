@@ -73,7 +73,7 @@ const plugin = {
         }
         // Register CLI command
         if (typeof api.registerCli === 'function') {
-            api.registerCli(cli_1.registerSetupCli);
+            api.registerCli((0, cli_1.createCliRegistrar)(api));
         }
     },
 };
