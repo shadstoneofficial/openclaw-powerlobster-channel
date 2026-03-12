@@ -53,7 +53,14 @@ export const registerSetupCli = (ctx: any) => {
                     
                     if (response.ok) {
                         const data = await response.json();
-                        if (data.user && data.user.relay_id && data.user.relay_api_key) {
+                        
+                        // Handle standard success response
+                        if (data.status === 'success' && data.user && data.user.relay_id && data.user.relay_api_key) {
+                            relayId = data.user.relay_id;
+                            relayApiKey = data.user.relay_api_key;
+                            s.stop('Credentials fetched successfully!');
+                        } else if (data.user && data.user.relay_id && data.user.relay_api_key) {
+                            // Handle case where status might be missing but user object is present
                             relayId = data.user.relay_id;
                             relayApiKey = data.user.relay_api_key;
                             s.stop('Credentials fetched successfully!');
