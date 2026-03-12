@@ -34,6 +34,9 @@ var __importStar = (this && this.__importStar) || (function () {
 })();
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.registerSetupCli = void 0;
+const fs = __importStar(require("fs/promises"));
+const path = __importStar(require("path"));
+const os = __importStar(require("os"));
 const registerSetupCli = (ctx) => {
     const cmd = ctx.program.command('powerlobster');
     cmd.command('setup')
@@ -156,29 +159,32 @@ const registerSetupCli = (ctx) => {
             ...(webhookUrl ? { webhookUrl } : {})
         };
         try {
-            // Access config service - handle potential different API structures
-            // Depending on OpenClaw version, config might be at:
-            // ctx.runtime.config (standard)
-            // ctx.config (older/cli context)
-            // ctx.services.config (newer)
-            const configService = ctx.runtime?.config || ctx.config || ctx.services?.config;
-            if (!configService) {
-                throw new Error('Config service not found in CLI context');
+            // Get config file path (respect OPENCLAW_CONFIG env var)
+            const configPath = process.env.OPENCLAW_CONFIG ||
+                path.join(os.homedir(), ".openclaw", "openclaw.json");
+            // Read existing config
+            let existingConfig = {};
+            try {
+                const content = await fs.readFile(configPath, "utf-8");
+                existingConfig = JSON.parse(content);
             }
-            // Load fresh config
-            const config = await configService.loadConfig();
-            // Mutate config
-            config.channels = config.channels || {};
-            config.channels.powerlobster = {
+            catch (e) {
+                // File might not exist, start fresh
+                existingConfig = {};
+            }
+            // Patch config - add powerlobster channel
+            existingConfig.channels = existingConfig.channels || {};
+            existingConfig.channels.powerlobster = {
+                enabled: true,
                 instances: [{
-                        id: 'main',
+                        id: "default",
                         config: accountConfig
                     }]
             };
-            // Write config
-            await configService.writeConfigFile(config);
+            // Write back (pretty print)
+            await fs.writeFile(configPath, JSON.stringify(existingConfig, null, 2));
             p.note('Skills loaded: 5', 'Info');
-            p.outro('✅ Configuration saved! Try sending a DM to test.');
+            p.outro(`✅ Configuration saved to ${configPath}! Try sending a DM to test.`);
         }
         catch (err) {
             p.note('Could not auto-save config. Please check permissions.', 'Error');

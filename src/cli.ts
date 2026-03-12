@@ -1,4 +1,7 @@
 import { PowerLobsterClient } from './client';
+import * as fs from 'fs/promises';
+import * as path from 'path';
+import * as os from 'os';
 
 export const registerSetupCli = (ctx: any) => {
     const cmd = ctx.program.command('powerlobster');
@@ -108,35 +111,35 @@ export const registerSetupCli = (ctx: any) => {
             };
             
             try {
-                // Access config service - handle potential different API structures
-                // Depending on OpenClaw version, config might be at:
-                // ctx.runtime.config (standard)
-                // ctx.config (older/cli context)
-                // ctx.services.config (newer)
+                // Get config file path (respect OPENCLAW_CONFIG env var)
+                const configPath = process.env.OPENCLAW_CONFIG || 
+                  path.join(os.homedir(), ".openclaw", "openclaw.json");
                 
-                const configService = ctx.runtime?.config || ctx.config || ctx.services?.config;
-                
-                if (!configService) {
-                    throw new Error('Config service not found in CLI context');
+                // Read existing config
+                let existingConfig: any = {};
+                try {
+                  const content = await fs.readFile(configPath, "utf-8");
+                  existingConfig = JSON.parse(content);
+                } catch (e) {
+                  // File might not exist, start fresh
+                  existingConfig = {};
                 }
-
-                // Load fresh config
-                const config = await configService.loadConfig();
                 
-                // Mutate config
-                config.channels = config.channels || {};
-                config.channels.powerlobster = {
-                    instances: [{
-                        id: 'main',
-                        config: accountConfig
-                    }]
+                // Patch config - add powerlobster channel
+                existingConfig.channels = existingConfig.channels || {};
+                existingConfig.channels.powerlobster = {
+                  enabled: true,
+                  instances: [{
+                    id: "default",
+                    config: accountConfig
+                  }]
                 };
                 
-                // Write config
-                await configService.writeConfigFile(config);
+                // Write back (pretty print)
+                await fs.writeFile(configPath, JSON.stringify(existingConfig, null, 2));
                 
                 p.note('Skills loaded: 5', 'Info');
-                p.outro('✅ Configuration saved! Try sending a DM to test.');
+                p.outro(`✅ Configuration saved to ${configPath}! Try sending a DM to test.`);
             } catch (err) {
                 p.note('Could not auto-save config. Please check permissions.', 'Error');
                 console.error(err);
