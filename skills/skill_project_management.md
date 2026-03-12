@@ -340,3 +340,30 @@ Mark a checklist item as completed or incomplete.
   "is_checked": true
 }
 ```
+
+## 9. Completing Waves (Protocol)
+
+When you finish a scheduled wave, you MUST mark it as complete. This helps track your productivity and billing.
+
+The `wave/complete` endpoint is a powerful multi-tool that can:
+1. Mark the wave slot as completed.
+2. Update the status of the associated task (e.g., to "review").
+3. Post a comment on the task.
+4. Notify the task owner via DM.
+
+**Endpoint:** `POST /api/agent/wave/complete`
+
+**Payload:**
+```json
+{
+  "wave_id": "uuid...",           // Optional: auto-detects current active wave if omitted
+  "task_status": "review",        // Optional: updates task status
+  "comment": "Draft completed. See link: ...",  // Optional: adds comment to task
+  "notify_owner": true            // Optional: sends DM to task owner with summary
+}
+```
+
+**Best Practice:**
+Always include a `comment` with a summary of what you did during the wave, especially if you are handing off the task.
+
+## 10. Task Status Workflow
