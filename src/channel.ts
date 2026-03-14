@@ -277,129 +277,159 @@ class PowerLobsterChannel implements ChannelPlugin<PowerLobsterAccount> {
     // Normalize event structure (Relay vs expected)
     const eventType = event.type || event.event;
     const eventPayload = event.payload || event.data;
+    const eventId = event.id || event.event_id;
 
     console.log(`[PowerLobster] Processing normalized event: ${eventType}`, eventPayload);
     
     // Update last event time for status reporting
     this.lastEventTime.set(accountId, new Date());
 
-    let peerId = '';
-    let content = '';
-    let type = 'unknown';
-
-    if (eventType === 'dm.received') {
-      peerId = eventPayload.sender_handle || eventPayload.from; // Check both sender_handle and from
-      content = eventPayload.content;
-      type = 'dm';
-    } else if (eventType === 'wave.started') {
-        content = `🌊 Wave started!\nTask: ${eventPayload.task_title || eventPayload.title}\nWave ID: ${eventPayload.wave_id}\nTime: ${eventPayload.wave_time}`;
-        peerId = 'wave-system'; 
-        type = 'wave';
-    } else if (eventType === 'task.assigned') {
-        content = `Task assigned: ${eventPayload.task?.title}. Project: ${eventPayload.project?.title}. Description: ${eventPayload.task?.description || "No description"}`;
-        peerId = 'task-system';
-        type = 'task';
-    } else if (eventType === 'task.comment') {
-        content = `New comment on task ${eventPayload.task?.title} from ${eventPayload.author}: ${eventPayload.content}`;
-        peerId = 'task-system';
-        type = 'task';
-    } else if (eventType === 'mention') {
-        content = `You were mentioned by ${eventPayload.author} in post: ${eventPayload.content}`;
-        peerId = eventPayload.author || 'mention-system';
-        type = 'mention';
-    } else if (eventType === 'wave.reminder') {
-        content = `Wave reminder: ${eventPayload.task_title || eventPayload.title} starts in 60 minutes`;
-        peerId = 'wave-system';
-        type = 'wave';
-    } else if (eventType === 'wave.scheduled') {
-        content = `Wave scheduled: ${eventPayload.task_title || eventPayload.title} at ${eventPayload.wave_time || eventPayload.time}`;
-        peerId = 'wave-system';
-        type = 'wave';
-    } else {
-        console.log(`[PowerLobster] Unhandled event type: ${eventType}`);
-        return;
-    }
-
-    // Resolve route
-    let agentId = 'main'; // Default fallback
-    
     try {
-      // Direct routing to configured agent ID (primary method for PowerLobster)
-      if (account.config.agentId) {
-        agentId = account.config.agentId;
-      } else {
-        // Fallback to dynamic routing if no specific agent configured
-        // This is rare for PowerLobster but kept for advanced use cases
-        try {
-          const route = await channelRuntime.routing.resolveAgentRoute({
-            channel: this.id,
-            accountId: accountId,
-            peer: {
-              id: peerId,
-              type: type, 
-            },
-            content: content,
-          });
-          if (route && route.agentId) {
-            agentId = route.agentId;
-          }
-        } catch (routingErr) {
-          console.warn(`[PowerLobster] Routing resolution failed, using default 'main':`, routingErr);
-          agentId = 'main';
-        }
-      }
+        let peerId = '';
+        let content = '';
+        let type = 'unknown';
 
-      if (agentId) {
-        // Build MsgContext
-        const msgContext: MsgContext = {
-          SessionKey: `powerlobster:dm:${peerId}`, 
-          Type: "message",
-          Body: content,
-          From: peerId,
-          Channel: this.id,
-          Platform: "powerlobster",
-        };
-
-        // Pass full routing context if available, otherwise minimal fallback
-        // This attempts to address the "undefined session" error by providing at least a mocked session structure if routing failed
-        if (!event.session) {
-             // Mock session if missing from event/routing
-             // This is a defensive measure for the routing warning
-        }
-
-        // DEBUG: Check channelRuntime structure
-        console.log('[PowerLobster] channelRuntime keys:', Object.keys(channelRuntime));
-        if (channelRuntime.reply) {
-            console.log('[PowerLobster] reply keys:', Object.keys(channelRuntime.reply));
-        }
-
-        // Dispatch and handle reply
-        if (channelRuntime.reply && typeof channelRuntime.reply.dispatchReplyWithBufferedBlockDispatcher === 'function') {
-            await channelRuntime.reply.dispatchReplyWithBufferedBlockDispatcher({
-              ctx: msgContext,
-              cfg: ctx.cfg,
-              dispatcherOptions: {
-                deliver: async (payload: { text: string }, info: any) => {
-                  console.log(`[PowerLobster] Delivering reply to ${peerId}: ${payload.text.substring(0, 50)}...`);
-                  // Send agent's reply back to PowerLobster
-                  const client = this.clients.get(accountId);
-                  if (client) {
-                     await client.sendDM(peerId, payload.text);
-                     console.log(`[PowerLobster] Reply delivered successfully.`);
-                  } else {
-                     console.error(`[PowerLobster] Client for account ${accountId} not found during delivery`);
-                  }
-                },
-              }
-            });
+        if (eventType === 'dm.received') {
+          peerId = eventPayload.sender_handle || eventPayload.from; // Check both sender_handle and from
+          content = eventPayload.content;
+          type = 'dm';
+        } else if (eventType === 'wave.started') {
+            content = `🌊 Wave started!\nTask: ${eventPayload.task_title || eventPayload.title}\nWave ID: ${eventPayload.wave_id}\nTime: ${eventPayload.wave_time}`;
+            peerId = 'wave-system'; 
+            type = 'wave';
+        } else if (eventType === 'task.assigned') {
+            content = `Task assigned: ${eventPayload.task?.title}. Project: ${eventPayload.project?.title}. Description: ${eventPayload.task?.description || "No description"}`;
+            peerId = 'task-system';
+            type = 'task';
+        } else if (eventType === 'task.comment') {
+            content = `New comment on task ${eventPayload.task?.title} from ${eventPayload.author}: ${eventPayload.content}`;
+            peerId = 'task-system';
+            type = 'task';
+        } else if (eventType === 'mention') {
+            content = `You were mentioned by ${eventPayload.author} in post: ${eventPayload.content}`;
+            peerId = eventPayload.author || 'mention-system';
+            type = 'mention';
+        } else if (eventType === 'wave.reminder') {
+            content = `Wave reminder: ${eventPayload.task_title || eventPayload.title} starts in 60 minutes`;
+            peerId = 'wave-system';
+            type = 'wave';
+        } else if (eventType === 'wave.scheduled') {
+            content = `Wave scheduled: ${eventPayload.task_title || eventPayload.title} at ${eventPayload.wave_time || eventPayload.time}`;
+            peerId = 'wave-system';
+            type = 'wave';
         } else {
-            console.error('[PowerLobster] channelRuntime.reply.dispatchReplyWithBufferedBlockDispatcher not found!');
+            console.log(`[PowerLobster] Unhandled event type: ${eventType}`);
+            return;
         }
-      } else {
-          console.warn(`[PowerLobster] No agent resolved for event from ${peerId}`);
-      }
-    } catch (err) {
-      console.error(`[PowerLobster] Error dispatching event:`, err);
+
+        // Resolve route
+        let agentId = 'main'; // Default fallback
+        
+        if (account.config.agentId) {
+            agentId = account.config.agentId;
+        } else {
+            try {
+                const route = await channelRuntime.routing.resolveAgentRoute({
+                    channel: this.id,
+                    accountId: accountId,
+                    peer: {
+                        id: peerId,
+                        type: type, 
+                    },
+                    content: content,
+                });
+                if (route && route.agentId) {
+                    agentId = route.agentId;
+                }
+            } catch (routingErr) {
+                console.warn(`[PowerLobster] Routing resolution failed, using default 'main':`, routingErr);
+                agentId = 'main';
+            }
+        }
+
+        if (agentId) {
+            // Build MsgContext
+            const msgContext: MsgContext = {
+                SessionKey: `powerlobster:dm:${peerId}`, 
+                Type: "message",
+                Body: content,
+                From: peerId,
+                Channel: this.id,
+                Platform: "powerlobster",
+            };
+
+            // Pass full routing context if available, otherwise minimal fallback
+            if (!event.session) {
+                // Mock session if missing from event/routing
+            }
+
+            // DEBUG: Check channelRuntime structure
+            console.log('[PowerLobster] channelRuntime keys:', Object.keys(channelRuntime));
+            if (channelRuntime.reply) {
+                console.log('[PowerLobster] reply keys:', Object.keys(channelRuntime.reply));
+            }
+
+            // Dispatch and handle reply
+            if (channelRuntime.reply && typeof channelRuntime.reply.dispatchReplyWithBufferedBlockDispatcher === 'function') {
+                await channelRuntime.reply.dispatchReplyWithBufferedBlockDispatcher({
+                    ctx: msgContext,
+                    cfg: ctx.cfg,
+                    dispatcherOptions: {
+                        deliver: async (payload: { text: string }, info: any) => {
+                            console.log(`[PowerLobster] Delivering reply to ${peerId}: ${payload.text.substring(0, 50)}...`);
+                            // Send agent's reply back to PowerLobster
+                            const client = this.clients.get(accountId);
+                            if (client) {
+                                await client.sendDM(peerId, payload.text);
+                                console.log(`[PowerLobster] Reply delivered successfully.`);
+                            } else {
+                                console.error(`[PowerLobster] Client for account ${accountId} not found during delivery`);
+                            }
+                        },
+                    }
+                });
+            } else {
+                console.error('[PowerLobster] channelRuntime.reply.dispatchReplyWithBufferedBlockDispatcher not found!');
+            }
+        } else {
+            console.warn(`[PowerLobster] No agent resolved for event from ${peerId}`);
+        }
+
+        // Report Success to Relay
+        if (eventId) {
+            const client = this.clients.get(accountId);
+            if (client) {
+                await client.reportEventResult(eventId, { status: 'success' });
+            }
+        }
+
+    } catch (err: any) {
+        console.error(`[PowerLobster] Failed to handle event ${eventId}:`, err);
+        
+        // Report Failure to Relay
+        if (eventId) {
+            const client = this.clients.get(accountId);
+            if (client) {
+                // Detect Error Reason
+                let reason = 'error';
+                const msg = err.message?.toLowerCase() || '';
+                
+                if (msg.includes('rate limit') || msg.includes('429') || msg.includes('quota')) {
+                    reason = 'rate_limit';
+                } else if (msg.includes('timeout') || msg.includes('etimedout')) {
+                    reason = 'timeout';
+                } else if (msg.includes('network') || msg.includes('connection')) {
+                    reason = 'offline';
+                }
+                
+                await client.reportEventResult(eventId, { 
+                    status: 'failed', 
+                    error_reason: reason 
+                });
+            }
+        }
+        // Rethrow for logs/internal handlers
+        throw err;
     }
   }
 

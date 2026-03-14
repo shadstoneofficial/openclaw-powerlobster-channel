@@ -61,6 +61,27 @@ export class PowerLobsterClient {
     );
   }
 
+  async reportEventResult(eventId: string, result: { status: 'success' | 'failed'; error_reason?: string | null }) {
+    // Call Relay API to report execution result
+    if (!this.config.relayId || !this.config.relayApiKey) {
+        console.warn('[PowerLobster] Cannot report event result: missing relay credentials');
+        return;
+    }
+
+    return this.request(
+        `${RELAY_BASE_URL}/events/${eventId}/result`,
+        'POST',
+        {
+            ...result,
+            executed_at: new Date().toISOString()
+        },
+        true // useRelayAuth
+    ).catch(err => {
+        // Don't crash if reporting fails, just log it
+        console.error(`[PowerLobster] Failed to report event result for ${eventId}:`, err);
+    });
+  }
+
   async sendDM(userId: string, content: string) {
     // userId in PowerLobster is typically a handle for DMs
     return this.request(`${BASE_URL}/message`, 'POST', {
