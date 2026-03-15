@@ -2,7 +2,9 @@
 
 This document details the recent changes made to the OpenClaw PowerLobster Channel Plugin to support Relay Sync, Execution Reporting, and Metadata Preservation.
 
-**UPDATE:** Fixed a critical bug where `ctx.sendEvent` (non-existent) was used. Reverted to `dispatchReplyWithBufferedBlockDispatcher` with metadata support.
+**UPDATE (Mar 15):**
+1. Fixed a critical bug where `ctx.sendEvent` (non-existent) was used. Reverted to `dispatchReplyWithBufferedBlockDispatcher` with metadata support.
+2. Fixed `src/webhook.ts` to correctly preserve `_meta` when parsing payloads.
 
 ## 1. Feature: Relay Configuration Sync & Caching
 
@@ -113,55 +115,7 @@ async getRelayConfig() {
 
 ---
 
-## 2. Feature: Metadata Preservation (Corrected)
-
-**Objective:** Pass the `_meta` field from incoming Relay events into the OpenClaw event payload via `MsgContext`.
-
-### File: [src/types.ts](src/types.ts)
-
-**Location:** `MsgContext` interface.
-
-```typescript
-export interface MsgContext {
-  SessionKey: string;
-  Type: string;
-  Body: string;
-  From: string;
-  Channel: string;
-  Platform: string;
-  Metadata?: any; // Added Metadata support
-}
-```
-
-### File: [src/channel.ts](src/channel.ts)
-
-**Location:** `handleEvent` method.
-
-1.  **Extract Metadata:**
-    ```typescript
-    const eventMeta = event._meta || {}; // Extract metadata
-    ```
-
-2.  **Pass to MsgContext (inside `handleEvent`):**
-    ```typescript
-    // ... inside if (agentId) block ...
-    const msgContext: MsgContext = {
-        SessionKey: `powerlobster:dm:${peerId}`, 
-        Type: "message",
-        Body: content,
-        From: peerId,
-        Channel: this.id,
-        Platform: "powerlobster",
-        Metadata: {
-            delivery_method: eventMeta.delivery_method || 'unknown',
-            ...eventMeta
-        }
-    };
-    ```
-
----
-
-## 3. Feature: Execution Result Reporting
+## 2. Feature: Execution Result Reporting
 
 **Objective:** Report the success or failure of event processing back to the Relay so it can update its dashboard.
 
@@ -238,3 +192,71 @@ async reportEventResult(eventId: string, result: { status: 'success' | 'failed';
         throw err;
     }
     ```
+
+---
+
+## 3. Feature: Metadata Preservation (Corrected)
+
+**Objective:** Pass the `_meta` field from incoming Relay events into the OpenClaw event payload via `MsgContext`.
+
+### File: [src/types.ts](src/types.ts)
+
+**Location:** `MsgContext` interface.
+
+```typescript
+export interface MsgContext {
+  SessionKey: string;
+  Type: string;
+  Body: string;
+  From: string;
+  Channel: string;
+  Platform: string;
+  Metadata?: any; // Added Metadata support
+}
+```
+
+### File: [src/channel.ts](src/channel.ts)
+
+**Location:** `handleEvent` method.
+
+1.  **Extract Metadata:**
+    ```typescript
+    const eventMeta = event._meta || {}; // Extract metadata
+    ```
+
+2.  **Pass to MsgContext (inside `handleEvent`):**
+    ```typescript
+    // ... inside if (agentId) block ...
+    const msgContext: MsgContext = {
+        SessionKey: `powerlobster:dm:${peerId}`, 
+        Type: "message",
+        Body: content,
+        From: peerId,
+        Channel: this.id,
+        Platform: "powerlobster",
+        Metadata: {
+            delivery_method: eventMeta.delivery_method || 'unknown',
+            ...eventMeta
+        }
+    };
+    ```
+
+---
+
+## 4. Feature: Fix Webhook Payload Extraction
+
+**Objective:** Ensure `_meta` is preserved when parsing webhook payloads in `src/webhook.ts`.
+
+### File: [src/webhook.ts](src/webhook.ts)
+
+**Location:** `handle` method.
+
+```typescript
+// Normalize event if needed, similar to poller
+// Relay push payload structure matches the poller event structure: { payload: {...}, id: "..." }
+// We need to extract the inner payload and preserve metadata.
+const event = {
+    ...(body.payload || body),
+    _meta: body._meta || {}
+};
+```
