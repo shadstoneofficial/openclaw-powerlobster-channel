@@ -1,6 +1,8 @@
-# PowerLobster Plugin Update Specification
+# PowerLobster Plugin Update Specification (Corrected)
 
 This document details the recent changes made to the OpenClaw PowerLobster Channel Plugin to support Relay Sync, Execution Reporting, and Metadata Preservation.
+
+**UPDATE:** Fixed a critical bug where `ctx.sendEvent` (non-existent) was used. Reverted to `dispatchReplyWithBufferedBlockDispatcher` with metadata support.
 
 ## 1. Feature: Relay Configuration Sync & Caching
 
@@ -111,9 +113,25 @@ async getRelayConfig() {
 
 ---
 
-## 2. Feature: Metadata Preservation
+## 2. Feature: Metadata Preservation (Corrected)
 
-**Objective:** Pass the `_meta` field from incoming Relay events into the OpenClaw event payload so agents can see delivery details.
+**Objective:** Pass the `_meta` field from incoming Relay events into the OpenClaw event payload via `MsgContext`.
+
+### File: [src/types.ts](src/types.ts)
+
+**Location:** `MsgContext` interface.
+
+```typescript
+export interface MsgContext {
+  SessionKey: string;
+  Type: string;
+  Body: string;
+  From: string;
+  Channel: string;
+  Platform: string;
+  Metadata?: any; // Added Metadata support
+}
+```
 
 ### File: [src/channel.ts](src/channel.ts)
 
@@ -124,20 +142,21 @@ async getRelayConfig() {
     const eventMeta = event._meta || {}; // Extract metadata
     ```
 
-2.  **Pass to Payload:**
+2.  **Pass to MsgContext (inside `handleEvent`):**
     ```typescript
-    await ctx.sendEvent({
-        type: 'message',
-        // ...
-        payload: {
-            text: content,
-            // ...
-            metadata: {
-                delivery_method: eventMeta.delivery_method || 'unknown',
-                ...eventMeta
-            }
-        },
-    });
+    // ... inside if (agentId) block ...
+    const msgContext: MsgContext = {
+        SessionKey: `powerlobster:dm:${peerId}`, 
+        Type: "message",
+        Body: content,
+        From: peerId,
+        Channel: this.id,
+        Platform: "powerlobster",
+        Metadata: {
+            delivery_method: eventMeta.delivery_method || 'unknown',
+            ...eventMeta
+        }
+    };
     ```
 
 ---
@@ -219,26 +238,3 @@ async reportEventResult(eventId: string, result: { status: 'success' | 'failed';
         throw err;
     }
     ```
-
----
-
-## 4. Feature: Fix Type Definitions
-
-**Objective:** Add missing methods to TypeScript interfaces to prevent linter errors.
-
-### File: [src/types.ts](src/types.ts)
-
-**Location:** `ChannelGatewayContext` interface.
-
-```typescript
-export interface ChannelGatewayContext<ResolvedAccount = any> {
-  // ... existing fields
-  
-  // Add sendEvent definition which was missing
-  sendEvent: (event: {
-      type: string;
-      source: { channel: string; account: string; peer: string };
-      payload: { text: string; files?: any[]; metadata?: any };
-  }) => Promise<void>;
-}
-```

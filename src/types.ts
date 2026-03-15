@@ -29,6 +29,7 @@ export interface MsgContext {
   From: string;
   Channel: string;
   Platform: string;
+  Metadata?: any; // Added Metadata support
 }
 
 export interface ChannelGatewayContext<ResolvedAccount = any> {
@@ -49,12 +50,6 @@ export interface ChannelGatewayContext<ResolvedAccount = any> {
       }) => Promise<void>;
     };
   };
-  // Add sendEvent definition which was missing
-  sendEvent: (event: {
-      type: string;
-      source: { channel: string; account: string; peer: string };
-      payload: { text: string; files?: any[]; metadata?: any };
-  }) => Promise<void>;
 }
 
 export interface ResolveAgentRouteInput {
