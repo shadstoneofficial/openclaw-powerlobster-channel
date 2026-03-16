@@ -421,9 +421,11 @@ class PowerLobsterChannel implements ChannelPlugin<PowerLobsterAccount> {
                 From: peerId,
                 Channel: this.id,
                 Platform: "powerlobster",
-                UntrustedContext: [
-                    `PowerLobster Delivery Method: ${eventMeta.delivery_method || 'unknown'}`
-                ]
+                UntrustedContext: Object.entries(eventMeta).length > 0
+                    ? Object.entries(eventMeta).map(
+                        ([key, value]) => `PowerLobster ${key}: ${value}`
+                      )
+                    : ['PowerLobster: no metadata']
             };
 
             // Pass full routing context if available, otherwise minimal fallback
