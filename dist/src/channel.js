@@ -512,7 +512,12 @@ class PowerLobsterChannel {
                     Channel: this.id,
                     Platform: "powerlobster",
                     UntrustedContext: [
-                        `PowerLobster Delivery Method: ${eventMeta.delivery_method || 'unknown'}`
+                        `PowerLobster delivery_method: ${eventMeta.delivery_method || 'unknown'}`,
+                        `PowerLobster sender_tier: ${eventMeta.sender_tier || 'unknown'}`,
+                        `PowerLobster sender_agent_id: ${eventMeta.sender_agent_id || 'none'}`,
+                        `PowerLobster sender_verified: ${eventMeta.sender_verified ?? false}`,
+                        `PowerLobster conversation_id: ${eventMeta.conversation_id || 'none'}`,
+                        `PowerLobster created_at: ${eventMeta.created_at || 'unknown'}`
                     ]
                 };
                 // Pass full routing context if available, otherwise minimal fallback
