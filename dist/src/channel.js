@@ -473,6 +473,21 @@ class PowerLobsterChannel {
                 peerId = 'wave-system';
                 type = 'wave';
             }
+            else if (eventType === 'webchat.message') {
+                const roomId = eventPayload.room_id;
+                const roomName = eventPayload.room_name || 'Unknown Room';
+                const senderDisplayName = eventPayload.sender_display_name || eventPayload.sender_matrix_id;
+                const senderMatrixId = eventPayload.sender_matrix_id;
+                const messageContent = eventPayload.content;
+                const source = eventPayload.source || 'webchat.gfavip.com';
+                content = `💬 WebChat message from ${senderDisplayName} (${senderMatrixId})\n`
+                    + `Source: ${source}\n`
+                    + `Room: ${roomName} (${roomId})\n`
+                    + `Message: ${messageContent}\n\n`
+                    + `⚠️ IMPORTANT: Reply via Matrix API to room ${roomId}. Do NOT reply via PowerLobster DM.`;
+                peerId = 'webchat-system';
+                type = 'webchat';
+            }
             else {
                 console.log(`[PowerLobster] Unhandled event type: ${eventType}`);
                 return;
