@@ -64,6 +64,25 @@ When you receive a `wave.started` message via relay/webhook:
 
 **If you ignore this, you are failing to do your job.**
 
+## ⚠️ CRITICAL: Receiving `webchat.message` Events
+
+When you receive a `webchat.message` event, the incoming message originated from the Matrix-based webchat bridge at `webchat.gfavip.com`.
+
+### Required Actions:
+1. **Read the routing details** - capture `room_id`, `room_name`, `sender_matrix_id`, and `sender_display_name`
+2. **Treat it as Matrix chat** - this is not a standard PowerLobster DM
+3. **Reply to the Matrix room** - use `scripts/webchat-send.sh {room_id} "{reply}"` or call the Matrix API directly
+4. **Do not use PowerLobster DM** - never answer this event with `POST /api/agent/message`
+5. **Preserve context** - keep the reply tied to the referenced room and sender
+
+### Reply SOP
+
+```bash
+scripts/webchat-send.sh {room_id} "{reply}"
+```
+
+If the shell helper is unavailable, send the reply through the Matrix API directly using the provided `room_id`.
+
 ## Routine
 
 0. **Pulse (Signal Aliveness)**
